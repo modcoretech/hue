@@ -1,10 +1,8 @@
 (function () {
   'use strict';
 
-
   // ── Icons ─────────────────────────────────────────────────────────────────
   lucide.createIcons();
-
 
   // ── DOM refs ──────────────────────────────────────────────────────────────
   const canvas            = document.getElementById('imageCanvas');
@@ -15,6 +13,8 @@
   const resolution        = document.getElementById('canvasResolution');
   const colorHeroEl       = document.getElementById('colorHero');
   const headerSwatch      = document.getElementById('headerSwatch');
+  const dynamicFavicon    = document.getElementById('dynamicFavicon');
+  const nativeColorPicker = document.getElementById('nativeColorPicker');
   const hexValueEl        = document.getElementById('hexValue');
   const rgbValueEl        = document.getElementById('rgbValue');
   const hslValueEl        = document.getElementById('hslValue');
@@ -39,8 +39,7 @@
   const uploadMenuChevron = document.getElementById('uploadMenuChevron');
   const dragOverlay       = document.getElementById('dragOverlay');
   const toast             = document.getElementById('toast');
-  const toastText         = document.getElementById('toastText');
-  const toastMsg = document.getElementById('toast-msg'); // Double-check this ID matches your HTML
+  const toastMsg          = document.getElementById('toast-msg');
   const toastIcon         = document.getElementById('toastIcon');
   const magnifier         = document.getElementById('magnifier');
   const magCanvas         = document.getElementById('magCanvas');
@@ -63,12 +62,11 @@
   let currentImage    = null;
   let currentColor    = { r: 59, g: 130, b: 246 };
   let recentColors    = [];
-  let paletteColors   = [];   // [{r,g,b}]
+  let paletteColors   = [];
   let paletteView     = 'list';
-  let toastTimer      = null;
   let magEnabled      = true;
   let crosshairEnabled= false;
-  let crosshairPos    = null; // {x, y} in canvas coords
+  let crosshairPos    = null;
   let rafId           = null;
   let lastMoveEvent   = null;
   const colorThief    = new ColorThief();
@@ -77,7 +75,7 @@
 
   // ── Color math ────────────────────────────────────────────────────────────
   const rgbToHex = (r, g, b) =>
-    '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('').toUpperCase();
+    '#' + [r, g, b].map(x => Math.round(x).toString(16).padStart(2, '0')).join('').toUpperCase();
 
   function rgbToHsl(r, g, b) {
     r /= 255; g /= 255; b /= 255;
@@ -104,6 +102,7 @@
     return { r: Math.round(f(0) * 255), g: Math.round(f(8) * 255), b: Math.round(f(4) * 255) };
   }
 
+  // Enhanced OKLCH conversion precision
   function rgbToOklch(r, g, b) {
     const lin = v => { v /= 255; return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
     const rl = lin(r), gl = lin(g), bl = lin(b);
@@ -119,7 +118,6 @@
     return { L: L.toFixed(2), C: C.toFixed(2), H };
   }
 
-  // Relative luminance (WCAG)
   function relativeLuminance(r, g, b) {
     const lin = v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
     return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
@@ -137,42 +135,29 @@
     return 'Fail';
   }
 
-  // ── Toast ─────────────────────────────────────────────────────────────────
+  // ── Toast System (Zero Window Alerts) ──────────────────────────────────
   function showToast(message, isError = false) {
-  // 1. Check if elements exist to prevent ReferenceErrors
-  if (!toast || !toastMsg || !toastIcon) {
-    console.error("Toast elements not found in DOM");
-    alert(message); // Fallback so user still sees the message
-    return;
+    if (!toast || !toastMsg || !toastIcon) return;
+
+    toastMsg.textContent = message;
+
+    if (isError) {
+      toast.classList.add('border-red-500/50');
+      toastIcon.classList.replace('text-emerald-400', 'text-red-400');
+    } else {
+      toast.classList.remove('border-red-500/50');
+      toastIcon.classList.replace('text-red-400', 'text-emerald-400');
+    }
+
+    toast.classList.remove('hidden', 'translate-y-full', 'opacity-0');
+    toast.classList.add('translate-y-0', 'opacity-100');
+
+    if (window.toastTimer) clearTimeout(window.toastTimer);
+    window.toastTimer = setTimeout(() => {
+      toast.classList.add('translate-y-full', 'opacity-0');
+      setTimeout(() => toast.classList.add('hidden'), 300);
+    }, 3000);
   }
-
-  // 2. Set the text
-  toastMsg.textContent = message;
-
-  // 3. Update Icon (Using setAttribute for SVG compatibility)
-  const iconClass = isError ? 'fas fa-exclamation-circle' : 'fas fa-check-circle';
-  toastIcon.setAttribute('class', iconClass);
-
-  // 4. Update Colors
-  if (isError) {
-    toast.classList.add('border-red-500/50');
-    toastIcon.style.color = '#f87171'; // Red-400
-  } else {
-    toast.classList.remove('border-red-500/50');
-    toastIcon.style.color = '#34d399'; // Emerald-400
-  }
-
-  // 5. Show Animation
-  toast.classList.remove('hidden', 'translate-y-full', 'opacity-0');
-  toast.classList.add('translate-y-0', 'opacity-100');
-
-  // 6. Auto-hide logic
-  if (window.toastTimer) clearTimeout(window.toastTimer);
-  window.toastTimer = setTimeout(() => {
-    toast.classList.add('translate-y-full', 'opacity-0');
-    setTimeout(() => toast.classList.add('hidden'), 300);
-  }, 3000);
-}
 
   function announce(msg) {
     srAnnounce.textContent = '';
@@ -185,8 +170,15 @@
       .catch(() => showToast('Copy failed', true));
   }
 
+  // Dynamic Favicon Updating Feature
+  function updateFavicon(hexColor) {
+    const encodedHex = encodeURIComponent(hexColor);
+    const svg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='${encodedHex}'/></svg>`;
+    dynamicFavicon.href = `data:image/svg+xml,${svg}`;
+  }
+
   // ── Color display update ───────────────────────────────────────────────────
-  function updateColorDisplay(r, g, b, skipRecent = false) {
+  function updateColorDisplay(r, g, b) {
     currentColor = { r, g, b };
     const hex  = rgbToHex(r, g, b);
     const hsl  = rgbToHsl(r, g, b);
@@ -195,21 +187,20 @@
     const crW  = contrastRatio(1.0, lumC);
     const crB  = contrastRatio(0.0, lumC);
 
-    // Hero swatch (button id="colorHero" / id="heroHexCopyBtn" — same element)
     colorHeroEl.style.background = hex;
     headerSwatch.style.background = hex;
+    nativeColorPicker.value = hex;
+    updateFavicon(hex);
 
     hexValueEl.textContent    = hex;
-    rgbValueEl.textContent    = `${r}, ${g}, ${b}`;
+    rgbValueEl.textContent    = `${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}`;
     hslValueEl.textContent    = `${hsl.h}° ${hsl.s}% ${hsl.l}%`;
     oklchValueEl.textContent  = `oklch(${ok.L} ${ok.C} ${ok.H}°)`;
     cssVarValueEl.textContent = `--color: ${hex};`;
 
-    // Contrast accessibility
     contrastWhiteEl.textContent = `on ☀ ${crW}:1 ${wcagGrade(crW)}`;
     contrastBlackEl.textContent = `on ☾ ${crB}:1 ${wcagGrade(crB)}`;
 
-    // Shades
     shadesStrip.innerHTML = '';
     [5, 15, 25, 35, 45, 55, 65, 75, 85, 95].forEach(l => {
       const { r: sr, g: sg, b: sb } = hslToRgb(hsl.h, hsl.s, l);
@@ -222,11 +213,9 @@
       el.setAttribute('tabindex', '0');
       el.setAttribute('aria-label', `Shade ${sh}`);
       el.addEventListener('click', () => { updateColorDisplay(sr, sg, sb); addRecentColor(sr, sg, sb); });
-      el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); } });
       shadesStrip.appendChild(el);
     });
 
-    // Harmonics: complementary, triadic, analogous
     harmonicsRow.innerHTML = '';
     const harmAngles = [
       { angle: 180, label: 'comp' },
@@ -249,9 +238,25 @@
       harmonicsRow.appendChild(el);
     });
 
-    // Update page title
     document.title = `${hex} · hue`;
   }
+
+  // Native input fine tuning
+  nativeColorPicker.addEventListener('input', (e) => {
+    const hex = e.target.value;
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    updateColorDisplay(r, g, b);
+  });
+
+  nativeColorPicker.addEventListener('change', (e) => {
+    const hex = e.target.value;
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    addRecentColor(r, g, b);
+  });
 
   // ── Copy buttons ──────────────────────────────────────────────────────────
   document.querySelectorAll('.copy-btn').forEach(btn => {
@@ -348,11 +353,7 @@
     });
   }
 
-  // Palette modal
   openPaletteModalBtn.addEventListener('click', () => openPaletteModal());
-  extractBtn.addEventListener('click', () => {
-    // already extracted above, open modal immediately after extract if colors ready
-  });
 
   function openPaletteModal() {
     paletteModal.classList.remove('hidden');
@@ -371,12 +372,6 @@
   paletteModalClose.addEventListener('click', closePaletteModal);
   paletteModal.addEventListener('click', e => { if (e.target === paletteModal) closePaletteModal(); });
 
-  // Re-extract and immediately open modal
-  extractBtn.addEventListener('click', () => {
-    if (paletteColors.length) openPaletteModal();
-  }, { once: false });
-
-  // Palette view switcher
   paletteViewBtns.forEach(btn => {
     btn.addEventListener('click', () => {
       paletteView = btn.dataset.view;
@@ -395,7 +390,6 @@
     if (!paletteColors.length) return;
 
     if (paletteView === 'strip') {
-      // Full-width horizontal strip
       const wrap = document.createElement('div');
       wrap.className = 'flex h-24 rounded-xl overflow-hidden';
       paletteColors.forEach(({ r, g, b }) => {
@@ -405,7 +399,6 @@
         el.style.background = hex;
         el.title = hex;
         el.setAttribute('aria-label', `Select ${hex}`);
-        // hex label on hover
         const lbl = document.createElement('span');
         lbl.className = 'absolute bottom-1 left-1/2 -translate-x-1/2 text-[9px] font-mono opacity-0 group-hover:opacity-100 transition whitespace-nowrap bg-black/40 backdrop-blur-sm text-white rounded px-1 py-0.5';
         lbl.textContent = hex;
@@ -440,7 +433,6 @@
       return;
     }
 
-    // List view (default)
     const list = document.createElement('div');
     list.className = 'space-y-0.5';
     paletteColors.forEach(({ r, g, b }) => {
@@ -493,7 +485,7 @@
     copyText(`[${arr}]`, 'palette array');
   });
 
-  // ── Canvas interaction ────────────────────────────────────────────────────
+  // ── Canvas interaction & Color Sampling Precision ─────────────
   function getCanvasCoords(clientX, clientY) {
     const rect = canvas.getBoundingClientRect();
     return {
@@ -502,20 +494,37 @@
     };
   }
 
+  // Pixel Area Sampling for High Precision Tone Averaging
   function pickColorAt(clientX, clientY) {
     if (!currentImage) return;
     const { x, y } = getCanvasCoords(clientX, clientY);
     if (x < 0 || y < 0 || x >= canvas.width || y >= canvas.height) return;
-    const px = ctx.getImageData(x, y, 1, 1).data;
-    updateColorDisplay(px[0], px[1], px[2]);
-    addRecentColor(px[0], px[1], px[2]);
+    
+    const sampleWidth = Math.min(3, canvas.width - x);
+    const sampleHeight = Math.min(3, canvas.height - y);
+    const imgData = ctx.getImageData(x, y, sampleWidth, sampleHeight).data;
+    
+    let totalR = 0, totalG = 0, totalB = 0, count = 0;
+    for (let i = 0; i < imgData.length; i += 4) {
+      totalR += imgData[i];
+      totalG += imgData[i + 1];
+      totalB += imgData[i + 2];
+      count++;
+    }
+
+    const r = Math.round(totalR / count);
+    const g = Math.round(totalG / count);
+    const b = Math.round(totalB / count);
+
+    updateColorDisplay(r, g, b);
+    addRecentColor(r, g, b);
+    
     if (crosshairEnabled) {
       crosshairPos = { x, y };
       drawCrosshair();
     }
   }
 
-  // Throttled mousemove via rAF
   canvas.addEventListener('mousemove', e => {
     lastMoveEvent = e;
     if (!rafId) rafId = requestAnimationFrame(onRaf);
@@ -541,20 +550,17 @@
     magCtx.clearRect(0, 0, 88, 88);
     magCtx.drawImage(canvas, cx - 8, cy - 8, 16, 16, 0, 0, 88, 88);
 
-    // Crosshair lines
     magCtx.strokeStyle = 'rgba(255,255,255,0.6)';
     magCtx.lineWidth = 1;
     magCtx.beginPath(); magCtx.moveTo(44, 0); magCtx.lineTo(44, 88); magCtx.stroke();
     magCtx.beginPath(); magCtx.moveTo(0, 44); magCtx.lineTo(88, 44); magCtx.stroke();
-    // Center pixel box
+    
     magCtx.strokeStyle = 'rgba(255,255,255,0.9)';
     magCtx.strokeRect(38.5, 38.5, 11, 11);
 
-    // Read center pixel color for mag label
     const px = ctx.getImageData(x, y, 1, 1).data;
     magHex.textContent = rgbToHex(px[0], px[1], px[2]);
 
-    // Position magnifier
     const parentRect = canvas.parentElement.getBoundingClientRect();
     let left = clientX - parentRect.left + 16;
     let top  = clientY - parentRect.top  - 108;
@@ -592,7 +598,6 @@
 
   canvas.addEventListener('keydown', e => {
     if (!currentImage) return;
-    // Arrow key nudging — pick adjacent pixel
     if (!['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) return;
     e.preventDefault();
     if (!crosshairPos) crosshairPos = { x: Math.floor(canvas.width/2), y: Math.floor(canvas.height/2) };
@@ -613,7 +618,6 @@
     pickColorAt(t.clientX, t.clientY);
   }, { passive: false });
 
-  // Toggle magnifier
   function setMag(on) {
     magEnabled = on;
     toggleMagBtn.setAttribute('aria-pressed', String(on));
@@ -625,7 +629,6 @@
   }
   toggleMagBtn.addEventListener('click', () => setMag(!magEnabled));
 
-  // Toggle crosshair
   function setCrosshair(on) {
     crosshairEnabled = on;
     toggleCrosshairBtn.setAttribute('aria-pressed', String(on));
@@ -706,7 +709,6 @@
   });
 
   document.addEventListener('paste', e => {
-    // Ignore if focus is in URL input
     if (document.activeElement === urlInput) return;
     const items = e.clipboardData?.items;
     if (!items) return;
@@ -755,7 +757,7 @@
     } catch {}
   });
 
-  // ── Upload dropdown ────────────────────────────────────────────────────────
+  // ── Menu Options ────────────────────────────────────────────────────────
   function openMenu() {
     uploadMenu.classList.remove('hidden');
     uploadMenuBtn.setAttribute('aria-expanded', 'true');
@@ -790,7 +792,6 @@
   helpModalClose.addEventListener('click', closeHelpModal);
   helpModal.addEventListener('click', e => { if (e.target === helpModal) closeHelpModal(); });
 
-  // Focus trap helper for modals
   function trapFocus(modal, e) {
     const focusable = modal.querySelectorAll('button, input, [tabindex]:not([tabindex="-1"])');
     const first = focusable[0], last = focusable[focusable.length - 1];
@@ -810,10 +811,8 @@
 
   // ── Keyboard shortcuts ────────────────────────────────────────────────────
   document.addEventListener('keydown', e => {
-    // Skip if focus is inside an input / textarea
     const tag = document.activeElement?.tagName;
     if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-    // Skip if a modal is open and it's not the help/palette handling above
     const anyModal = !helpModal.classList.contains('hidden') || !paletteModal.classList.contains('hidden');
     if (anyModal) return;
 
@@ -830,7 +829,7 @@
       case 'p': case 'P': e.preventDefault(); extractBtn.click(); break;
       case 'm': case 'M': e.preventDefault(); setMag(!magEnabled); break;
       case 'x': case 'X': e.preventDefault(); setCrosshair(!crosshairEnabled); break;
-      case 'Delete':       e.preventDefault(); clearRecentBtn.click(); break;
+      case 'Delete':      e.preventDefault(); clearRecentBtn.click(); break;
     }
   });
 
@@ -838,7 +837,6 @@
   updateColorDisplay(59, 130, 246);
   renderRecent();
 
-  // Load demo image
   const demo = new Image();
   demo.crossOrigin = 'Anonymous';
   demo.src = 'https://images.pexels.com/photos/1108099/pexels-photo-1108099.jpeg?auto=compress&cs=tinysrgb&w=900';
