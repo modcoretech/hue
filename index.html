@@ -3,332 +3,532 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light dark">
   <title>hue · Color Picker</title>
-  
-  <!-- Dynamic Favicon Trait -->
-  <link id="dynamicFavicon" rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='%233B82F6'/></svg>">
-  
+
+  <link id="dynamicFavicon" rel="icon" type="image/svg+xml"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='%231e5fff'/></svg>">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Akt:wght@100..900&display=swap" rel="stylesheet">
+
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/colorthief@2.4.0/dist/color-thief.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.441.0/dist/umd/lucide.min.js"></script>
+
+  <style>
+    :root {
+      --bg: #fbfdff;
+      --text: #0d0f13;
+      --accent: #1e5fff;
+      --accent-hover: #1a54e0;
+      --surface: #eef1f8;
+      --surface-hover: #e0e5f1;
+      --muted: #5a6270;
+      --danger: #e5484d;
+      --radius: 24px;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0d0f13;
+        --text: #fbfdff;
+        --accent: #1e5fff;
+        --accent-hover: #3d75ff;
+        --surface: #161a22;
+        --surface-hover: #1f2530;
+        --muted: #8b93a3;
+        --danger: #f87171;
+      }
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; overflow: hidden; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Akt', system-ui, sans-serif;
+      font-variant-numeric: tabular-nums;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    button { font-family: inherit; }
+
+    a, .link {
+      color: var(--text);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+      text-decoration-thickness: 1px;
+      transition: color 0.15s;
+    }
+    a:hover, .link:hover { color: var(--accent); }
+
+    /* ── Card ─────────────────────────────────────── */
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    /* ── Buttons ──────────────────────────────────── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      line-height: 1;
+      outline: none;
+      transition: background 0.15s, color 0.15s, transform 0.1s;
+      white-space: nowrap;
+    }
+    .btn:focus-visible {
+      box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+    }
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .btn-accent {
+      background: var(--accent);
+      color: #fff;
+      padding: 8px 16px;
+    }
+    .btn-accent:hover:not(:disabled) { background: var(--accent-hover); }
+
+    .btn-soft {
+      background: var(--surface-hover);
+      color: var(--text);
+      padding: 8px 16px;
+    }
+    .btn-soft:hover:not(:disabled) { background: var(--surface); }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--muted);
+      padding: 8px 10px;
+    }
+    .btn-ghost:hover:not(:disabled) {
+      background: var(--surface-hover);
+      color: var(--text);
+    }
+
+    .btn.error {
+      background: var(--danger) !important;
+      color: #fff !important;
+    }
+
+    /* ── Inputs ───────────────────────────────────── */
+    .input {
+      background: var(--surface-hover);
+      color: var(--text);
+      border: none;
+      border-radius: var(--radius);
+      padding: 8px 12px;
+      font-family: inherit;
+      font-size: 12px;
+      outline: none;
+      transition: box-shadow 0.15s;
+      width: 100%;
+    }
+    .input::placeholder { color: var(--muted); }
+    .input:focus {
+      box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+    }
+
+    input[type="color"] {
+      appearance: none;
+      -webkit-appearance: none;
+      border: none;
+      background: none;
+      padding: 0;
+      cursor: pointer;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      overflow: hidden;
+    }
+    input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; border-radius: 50%; }
+    input[type="color"]::-webkit-color-swatch { border: none; border-radius: 50%; }
+    input[type="color"]::-moz-color-swatch { border: none; border-radius: 50%; }
+    input[type="color"]:focus-visible {
+      box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+    }
+
+    /* ── Swatches ─────────────────────────────────── */
+    .swatch {
+      border-radius: 50%;
+      cursor: pointer;
+      border: none;
+      outline: none;
+      flex-shrink: 0;
+      padding: 0;
+      transition: transform 0.12s, box-shadow 0.12s;
+    }
+    .swatch:hover { transform: scale(1.15); }
+    .swatch:focus-visible {
+      box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--accent);
+    }
+
+    /* ── Copy button feedback ─────────────────────── */
+    .copy-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+      background: var(--surface-hover);
+      color: var(--muted);
+      opacity: 0.5;
+      transition: background 0.15s, color 0.15s, opacity 0.15s, transform 0.15s;
+      flex-shrink: 0;
+    }
+    .copy-btn:hover, .copy-btn:focus-visible {
+      opacity: 1;
+      background: var(--surface);
+      color: var(--text);
+    }
+    .copy-btn:focus-visible {
+      box-shadow: 0 0 0 2px var(--surface), 0 0 0 4px var(--accent);
+    }
+    .copy-btn.copied {
+      background: var(--accent);
+      color: #fff;
+      opacity: 1;
+      transform: scale(1.1);
+    }
+
+    /* ── Hero flash on copy ───────────────────────── */
+    @keyframes heroFlash {
+      0%, 100% { filter: brightness(1); }
+      40%      { filter: brightness(1.35); }
+    }
+    .hero-flash { animation: heroFlash 0.35s ease; }
+
+    /* ── Modal ────────────────────────────────────── */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 60;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(6px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-backdrop.open { display: flex; }
+
+    /* ── Scrollbar ────────────────────────────────── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--muted); border-radius: 3px; }
+
+    /* ── Canvas ───────────────────────────────────── */
+    #imageCanvas { cursor: crosshair; touch-action: none; }
+
+    /* ── Utility ──────────────────────────────────── */
+    .sr-only {
+      position: absolute; width: 1px; height: 1px;
+      padding: 0; margin: -1px; overflow: hidden;
+      clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+    }
+
+    /* Prevent any value swaps from nudging layout */
+    .row-fixed { min-height: 36px; }
+    .num { font-variant-numeric: tabular-nums; }
+  </style>
+
   <script>
     tailwind.config = {
       theme: {
         extend: {
           fontFamily: {
-            sans: ['Geist', 'system-ui', 'sans-serif'],
-            mono: ['Geist Mono', 'monospace'],
-          }
-        }
-      }
-    }
+            sans: ['Akt', 'system-ui', 'sans-serif'],
+            mono: ['ui-monospace', 'SFMono-Regular', 'monospace'],
+          },
+        },
+      },
+    };
   </script>
 </head>
-<body class="bg-neutral-950 min-h-screen text-neutral-100 font-sans antialiased overflow-x-hidden" style="height:100vh;overflow:hidden;">
 
-<!-- LIVE REGION for screen readers -->
-<div id="srAnnounce" role="status" aria-live="polite" aria-atomic="true" class="sr-only"></div>
+<body class="font-sans antialiased">
 
-<!-- KEYBOARD SHORTCUT HELP MODAL -->
-<div id="helpModal" role="dialog" aria-modal="true" aria-labelledby="helpModalTitle"
-  class="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4">
-  <div class="bg-neutral-900 border border-neutral-700 rounded-2xl w-full max-w-sm shadow-2xl">
-    <div class="flex items-center justify-between px-4 pt-4 pb-3 border-b border-neutral-800">
-      <h2 id="helpModalTitle" class="text-sm font-semibold text-neutral-200">Keyboard Shortcuts</h2>
-      <button id="helpModalClose" aria-label="Close shortcuts" class="h-6 w-6 rounded-md bg-neutral-800 hover:bg-neutral-700 inline-flex items-center justify-center text-neutral-400 hover:text-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
-        <i data-lucide="x" class="w-3.5 h-3.5 pointer-events-none"></i>
-      </button>
-    </div>
-    <div class="p-4 space-y-1.5 text-xs">
-      <div class="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1.5 font-mono">
-        <span class="text-neutral-400">Copy HEX</span>                <kbd class="text-neutral-300 bg-neutral-800 px-1.5 py-0.5 rounded">H</kbd>
-        <span class="text-neutral-400">Copy RGB</span>                <kbd class="text-neutral-300 bg-neutral-800 px-1.5 py-0.5 rounded">R</kbd>
-        <span class="text-neutral-400">Copy HSL</span>                <kbd class="text-neutral-300 bg-neutral-800 px-1.5 py-0.5 rounded">S</kbd>
-        <span class="text-neutral-400">Copy OKLCH</span>              <kbd class="text-neutral-300 bg-neutral-800 px-1.5 py-0.5 rounded">O</kbd>
-        <span class="text-neutral-400">Copy CSS var</span>            <kbd class="text-neutral-300 bg-neutral-800 px-1.5 py-0.5 rounded">C</kbd>
-        <span class="text-neutral-400">Upload image</span>            <kbd class="text-neutral-300 bg-neutral-800 px-1.5 py-0.5 rounded">U</kbd>
-        <span class="text-neutral-400">Eyedropper</span>              <kbd class="text-neutral-300 bg-neutral-800 px-1.5 py-0.5 rounded">E</kbd>
-        <span class="text-neutral-400">Extract palette</span>         <kbd class="text-neutral-300 bg-neutral-800 px-1.5 py-0.5 rounded">P</kbd>
-        <span class="text-neutral-400">Clear recent</span>            <kbd class="text-neutral-300 bg-neutral-800 px-1.5 py-0.5 rounded">Del</kbd>
-        <span class="text-neutral-400">Toggle magnifier</span>        <kbd class="text-neutral-300 bg-neutral-800 px-1.5 py-0.5 rounded">M</kbd>
-        <span class="text-neutral-400">Toggle crosshair</span>        <kbd class="text-neutral-300 bg-neutral-800 px-1.5 py-0.5 rounded">X</kbd>
-        <span class="text-neutral-400">Paste image</span>             <kbd class="text-neutral-300 bg-neutral-800 px-1.5 py-0.5 rounded">Ctrl+V</kbd>
-        <span class="text-neutral-400">This help</span>               <kbd class="text-neutral-300 bg-neutral-800 px-1.5 py-0.5 rounded">?</kbd>
-        <span class="text-neutral-400">Close / dismiss</span>         <kbd class="text-neutral-300 bg-neutral-800 px-1.5 py-0.5 rounded">Esc</kbd>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- PALETTE MODAL -->
-<div id="paletteModal" role="dialog" aria-modal="true" aria-labelledby="paletteModalTitle"
-  class="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4">
-  <div class="bg-neutral-900 border border-neutral-700 rounded-2xl w-full max-w-md shadow-2xl flex flex-col max-h-[80vh]">
-    <div class="flex items-center justify-between px-4 pt-4 pb-3 border-b border-neutral-800 flex-shrink-0">
-      <div class="flex items-center gap-2">
-        <h2 id="paletteModalTitle" class="text-sm font-semibold text-neutral-200">Extracted Palette</h2>
-        <span id="paletteCount" class="text-xs text-neutral-600 font-mono"></span>
-      </div>
-      <div class="flex items-center gap-1.5">
-        <button id="paletteCopyAllBtn" title="Copy all as array" class="h-6 px-2 rounded-md bg-neutral-800 hover:bg-neutral-700 text-xs text-neutral-300 hover:text-white inline-flex items-center gap-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
-          <i data-lucide="copy" class="w-3 h-3 pointer-events-none"></i>
-          All
-        </button>
-        <button id="paletteModalClose" aria-label="Close palette" class="h-6 w-6 rounded-md bg-neutral-800 hover:bg-neutral-700 inline-flex items-center justify-center text-neutral-400 hover:text-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
-          <i data-lucide="x" class="w-3.5 h-3.5 pointer-events-none"></i>
+  <!-- ── Keyboard shortcuts modal ──────────────────────────── -->
+  <div id="helpModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="helpModalTitle">
+    <div class="card w-full max-w-sm">
+      <div class="flex items-center justify-between px-5 pt-5 pb-3">
+        <h2 id="helpModalTitle" class="text-sm font-semibold">Keyboard shortcuts</h2>
+        <button id="helpModalClose" class="btn btn-ghost h-8 w-8 p-0" aria-label="Close shortcuts">
+          <i data-lucide="x" class="w-4 h-4 pointer-events-none"></i>
         </button>
       </div>
+      <div class="px-5 pb-5 text-xs font-mono">
+        <div class="grid grid-cols-[1fr_auto] gap-x-6 gap-y-2">
+          <span style="color:var(--muted)">Copy HEX</span><kbd class="px-2 py-0.5 rounded-lg" style="background:var(--surface-hover)">H</kbd>
+          <span style="color:var(--muted)">Copy RGB</span><kbd class="px-2 py-0.5 rounded-lg" style="background:var(--surface-hover)">R</kbd>
+          <span style="color:var(--muted)">Copy HSL</span><kbd class="px-2 py-0.5 rounded-lg" style="background:var(--surface-hover)">S</kbd>
+          <span style="color:var(--muted)">Copy OKLCH</span><kbd class="px-2 py-0.5 rounded-lg" style="background:var(--surface-hover)">O</kbd>
+          <span style="color:var(--muted)">Copy CSS var</span><kbd class="px-2 py-0.5 rounded-lg" style="background:var(--surface-hover)">C</kbd>
+          <span style="color:var(--muted)">Upload image</span><kbd class="px-2 py-0.5 rounded-lg" style="background:var(--surface-hover)">U</kbd>
+          <span style="color:var(--muted)">Eyedropper</span><kbd class="px-2 py-0.5 rounded-lg" style="background:var(--surface-hover)">E</kbd>
+          <span style="color:var(--muted)">Extract palette</span><kbd class="px-2 py-0.5 rounded-lg" style="background:var(--surface-hover)">P</kbd>
+          <span style="color:var(--muted)">Toggle magnifier</span><kbd class="px-2 py-0.5 rounded-lg" style="background:var(--surface-hover)">M</kbd>
+          <span style="color:var(--muted)">Clear recent</span><kbd class="px-2 py-0.5 rounded-lg" style="background:var(--surface-hover)">Del</kbd>
+          <span style="color:var(--muted)">Paste image</span><kbd class="px-2 py-0.5 rounded-lg" style="background:var(--surface-hover)">Ctrl+V</kbd>
+          <span style="color:var(--muted)">Close / dismiss</span><kbd class="px-2 py-0.5 rounded-lg" style="background:var(--surface-hover)">Esc</kbd>
+        </div>
+      </div>
     </div>
-
-    <!-- Palette view toggle -->
-    <div class="flex items-center gap-1 px-4 pt-3 pb-2 flex-shrink-0">
-      <button data-view="list" class="palette-view-btn h-6 px-2 rounded text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 bg-neutral-800 text-neutral-200">List</button>
-      <button data-view="grid" class="palette-view-btn h-6 px-2 rounded text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 text-neutral-600 hover:text-neutral-400">Grid</button>
-      <button data-view="strip" class="palette-view-btn h-6 px-2 rounded text-xs font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 text-neutral-600 hover:text-neutral-400">Strip</button>
-    </div>
-
-    <div id="paletteModalContent" class="overflow-y-auto flex-1 px-3 pb-4" tabindex="0"></div>
   </div>
-</div>
 
-<!-- DRAG OVERLAY -->
-<div id="dragOverlay" aria-hidden="true"
-  class="fixed inset-0 z-50 bg-neutral-950/90 backdrop-blur-sm hidden flex-col items-center justify-center pointer-events-none">
-  <div class="border-2 border-dashed border-blue-400 rounded-2xl p-16 flex flex-col items-center gap-3 text-blue-300">
-    <i data-lucide="image-up" class="w-12 h-12"></i>
-    <span class="text-base font-medium">Drop image here</span>
-  </div>
-</div>
-
-<!-- APP SHELL -->
-<div class="flex flex-col h-screen max-h-screen">
-
-  <!-- Header -->
-  <header class="flex-shrink-0 flex items-center justify-between px-4 h-11 border-b border-neutral-800/60 bg-neutral-950">
-    <div class="flex items-center gap-2">
-      <div id="headerSwatch" class="w-3.5 h-3.5 rounded-full ring-1 ring-white/10 transition-colors duration-150 flex-shrink-0" style="background:#3b82f6" aria-hidden="true"></div>
-      <span class="text-sm font-semibold tracking-tight text-neutral-300 select-none">hue</span>
-      <span class="text-neutral-700 text-xs font-mono hidden sm:inline select-none">· color picker</span>
-    </div>
-    <div class="flex items-center gap-1.5">
-      <button id="helpBtn" title="Keyboard shortcuts (?)" aria-label="Open keyboard shortcuts" class="h-7 w-7 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 rounded-lg inline-flex items-center justify-center text-neutral-500 hover:text-neutral-300 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
-        <i data-lucide="keyboard" class="w-3.5 h-3.5 pointer-events-none"></i>
-      </button>
-      <button id="eyedropperBtn" title="Eyedropper — pick from screen (E)" aria-label="Open eyedropper"
-        class="h-7 px-2.5 bg-neutral-900 hover:bg-neutral-800 border border-neutral-800 rounded-lg text-xs font-medium inline-flex items-center gap-1.5 transition text-neutral-300 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
-        <i data-lucide="pipette" class="w-3.5 h-3.5 pointer-events-none"></i>
-        <span class="hidden sm:inline">Eyedropper</span>
-      </button>
-      <div class="relative" id="uploadGroup">
-        <div class="flex items-stretch">
-          <label class="h-7 pl-2.5 pr-2 bg-blue-600 hover:bg-blue-500 text-white rounded-l-lg text-xs font-medium inline-flex items-center gap-1.5 cursor-pointer transition focus-within:ring-2 focus-within:ring-blue-400 focus-within:outline-none"
-            title="Upload image (U)">
-            <i data-lucide="upload" class="w-3.5 h-3.5 pointer-events-none"></i>
-            <span>Upload</span>
-            <input type="file" id="fileInput" accept="image/*" class="sr-only" aria-label="Upload image file">
-          </label>
-          <div class="w-px bg-blue-500/30 flex-shrink-0"></div>
-          <button id="uploadMenuBtn" title="Paste or load from URL"
-            aria-haspopup="true" aria-expanded="false" aria-controls="uploadMenu" aria-label="More image options"
-            class="h-7 w-7 bg-blue-600 hover:bg-blue-500 text-white rounded-r-lg inline-flex items-center justify-center transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 flex-shrink-0">
-            <i data-lucide="chevron-down" class="w-3.5 h-3.5 pointer-events-none transition-transform duration-150" id="uploadMenuChevron"></i>
+  <!-- ── Palette modal ─────────────────────────────────────── -->
+  <div id="paletteModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="paletteModalTitle">
+    <div class="card w-full max-w-md flex flex-col max-h-[80vh]">
+      <div class="flex items-center justify-between px-5 pt-5 pb-3 flex-shrink-0">
+        <div class="flex items-center gap-2">
+          <h2 id="paletteModalTitle" class="text-sm font-semibold">Extracted palette</h2>
+          <span id="paletteCount" class="text-xs font-mono" style="color:var(--muted)"></span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="paletteCopyAllBtn" class="btn btn-soft h-8 px-3 text-[11px]" style="border-radius:24px">
+            <i data-lucide="copy" class="w-3.5 h-3.5 pointer-events-none"></i> Copy all
+          </button>
+          <button id="paletteModalClose" class="btn btn-ghost h-8 w-8 p-0" aria-label="Close palette">
+            <i data-lucide="x" class="w-4 h-4 pointer-events-none"></i>
           </button>
         </div>
-        <div id="uploadMenu" role="menu" aria-label="Image source options"
-          class="absolute right-0 top-full mt-1.5 w-60 bg-neutral-900 border border-neutral-700/80 rounded-xl shadow-2xl z-30 hidden">
-          <div class="p-1.5 space-y-0.5">
-            <button id="pasteClipBtn" role="menuitem"
-              class="w-full text-left px-3 py-2 rounded-lg text-sm text-neutral-200 hover:bg-neutral-800 inline-flex items-start gap-2.5 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
-              <i data-lucide="clipboard" class="w-4 h-4 text-neutral-400 flex-shrink-0 mt-0.5 pointer-events-none"></i>
+      </div>
+      <div class="flex items-center gap-1 px-5 pb-2 flex-shrink-0">
+        <button data-view="list" class="palette-view-btn btn btn-soft h-7 px-3 text-[11px]">List</button>
+        <button data-view="grid" class="palette-view-btn btn btn-ghost h-7 px-3 text-[11px]">Grid</button>
+        <button data-view="strip" class="palette-view-btn btn btn-ghost h-7 px-3 text-[11px]">Strip</button>
+      </div>
+      <div id="paletteModalContent" class="overflow-y-auto flex-1 px-4 pb-5" tabindex="0"></div>
+    </div>
+  </div>
+
+  <!-- ── Drag overlay ──────────────────────────────────────── -->
+  <div id="dragOverlay" aria-hidden="true"
+    class="fixed inset-0 z-50 hidden flex-col items-center justify-center pointer-events-none"
+    style="background:rgba(13,15,19,0.92);backdrop-filter:blur(6px)">
+    <div class="flex flex-col items-center gap-4 p-16 rounded-[24px]" style="border:2px dashed var(--accent)">
+      <i data-lucide="image-up" class="w-12 h-12" style="color:var(--accent)"></i>
+      <span class="text-base font-medium" style="color:var(--accent)">Drop image here</span>
+    </div>
+  </div>
+
+  <!-- ── App shell ─────────────────────────────────────────── -->
+  <div class="flex flex-col h-screen max-h-screen">
+
+    <!-- Header -->
+    <header class="flex-shrink-0 flex items-center justify-between px-4 h-14">
+      <div class="flex items-center gap-2.5">
+        <div id="headerSwatch" class="w-4 h-4 rounded-full transition-colors duration-150 flex-shrink-0"
+          style="background:var(--accent)" aria-hidden="true"></div>
+        <span class="text-base font-semibold tracking-tight select-none">hue</span>
+        <span class="text-xs font-mono hidden sm:inline select-none" style="color:var(--muted)">· color picker</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="helpBtn" class="btn btn-ghost h-9 w-9 p-0" title="Keyboard shortcuts (?)" aria-label="Open keyboard shortcuts">
+          <i data-lucide="keyboard" class="w-4 h-4 pointer-events-none"></i>
+        </button>
+        <button id="eyedropperBtn" class="btn btn-soft h-9 px-3.5" title="Eyedropper (E)" aria-label="Open eyedropper">
+          <i data-lucide="pipette" class="w-4 h-4 pointer-events-none"></i>
+          <span class="hidden sm:inline">Eyedropper</span>
+        </button>
+        <div class="relative" id="uploadGroup">
+          <div class="flex items-stretch">
+            <label class="btn btn-accent h-9 pl-3.5 pr-3 cursor-pointer" style="border-top-right-radius:0;border-bottom-right-radius:0" title="Upload image (U)">
+              <i data-lucide="upload" class="w-4 h-4 pointer-events-none"></i>
+              <span>Upload</span>
+              <input type="file" id="fileInput" accept="image/*" class="sr-only" aria-label="Upload image file">
+            </label>
+            <div class="w-px flex-shrink-0" style="background:rgba(255,255,255,0.25)"></div>
+            <button id="uploadMenuBtn" class="btn btn-accent h-9 w-9 p-0"
+              style="border-top-left-radius:0;border-bottom-left-radius:0"
+              title="Paste or load from URL" aria-haspopup="true" aria-expanded="false" aria-controls="uploadMenu" aria-label="More image options">
+              <i data-lucide="chevron-down" class="w-4 h-4 pointer-events-none transition-transform duration-150" id="uploadMenuChevron"></i>
+            </button>
+          </div>
+          <div id="uploadMenu" role="menu" aria-label="Image source options"
+            class="absolute right-0 top-full mt-2 w-64 z-30 hidden card p-2 shadow-2xl">
+            <button id="pasteClipBtn" role="menuitem" class="w-full text-left px-3 py-2.5 rounded-[18px] text-sm inline-flex items-start gap-3 transition"
+              style="background:transparent;color:var(--text);cursor:pointer;border:none;font-family:inherit"
+              onmouseover="this.style.background='var(--surface-hover)'"
+              onmouseout="this.style.background='transparent'">
+              <i data-lucide="clipboard" class="w-4 h-4 flex-shrink-0 mt-0.5 pointer-events-none" style="color:var(--muted)"></i>
               <div>
-                <div class="font-medium text-xs leading-tight">Paste from Clipboard</div>
-                <div class="text-[10px] text-neutral-500 mt-0.5 font-mono">Ctrl+V anywhere</div>
+                <div class="font-medium text-xs leading-tight">Paste from clipboard</div>
+                <div class="text-[10px] mt-0.5 font-mono" style="color:var(--muted)">Ctrl+V anywhere</div>
               </div>
             </button>
-            <div class="border-t border-neutral-800 my-1"></div>
-            <p class="px-3 py-0.5 text-[10px] text-neutral-600 font-semibold uppercase tracking-wider select-none">From URL</p>
-            <div class="px-1.5 pb-1.5 flex gap-1.5">
+            <div class="my-1.5" style="border-top:1px solid var(--surface-hover)"></div>
+            <p class="px-3 py-0.5 text-[10px] font-semibold uppercase tracking-wider select-none" style="color:var(--muted)">From URL</p>
+            <div class="px-1 pb-1 flex gap-2">
               <input type="url" id="urlInput" placeholder="https://…" aria-label="Image URL"
-                class="flex-1 min-w-0 h-7 px-2 bg-neutral-800 border border-neutral-700 rounded-lg text-xs text-neutral-100 placeholder-neutral-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500/30 font-mono transition">
-              <button id="loadUrlBtn" aria-label="Load image from URL"
-                class="h-7 px-2.5 bg-blue-600 hover:bg-blue-500 text-white text-xs rounded-lg font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 flex-shrink-0">Load</button>
+                class="input flex-1 min-w-0 h-8 text-xs font-mono" style="border-radius:18px">
+              <button id="loadUrlBtn" class="btn btn-accent h-8 px-3 text-xs flex-shrink-0">Load</button>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  </header>
+    </header>
 
-  <!-- Main content -->
-  <main class="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-3 gap-3 p-3">
+    <!-- Main -->
+    <main class="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-3 gap-3 px-3 pb-3">
 
-    <!-- Canvas panel -->
-    <section aria-label="Image canvas" class="lg:col-span-2 bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden flex flex-col min-h-0">
-      <div id="canvasWrap" class="relative flex-1 flex items-center justify-center min-h-0"
-        style="background-image:repeating-conic-gradient(#1c1c1c 0% 25%,#161616 0% 50%);background-size:16px 16px;">
-        <canvas id="imageCanvas"
-          role="img"
-          aria-label="Image canvas — click to pick a color"
-          tabindex="0"
-          class="max-w-full max-h-full object-contain relative z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset rounded-lg"
-          style="cursor:crosshair;touch-action:none;display:none;"></canvas>
-        
-        <div id="canvasPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center gap-2.5 pointer-events-none z-10">
-          <i data-lucide="image" class="w-10 h-10 text-neutral-800"></i>
-          <div class="text-center">
-            <p class="text-xs font-medium text-neutral-600">No image loaded</p>
-            <p class="text-[10px] mt-0.5 text-neutral-700 font-mono">Upload · paste · drag & drop</p>
-          </div>
-        </div>
-        
-        <div id="magnifier" aria-hidden="true" class="absolute pointer-events-none z-20" style="display:none;">
-          <canvas id="magCanvas" width="88" height="88" class="rounded-xl ring-2 ring-white/20 shadow-2xl block"></canvas>
-          <div id="magHex" class="text-center font-mono text-[10px] text-neutral-300 mt-1 bg-neutral-900/80 rounded px-1.5 py-0.5 backdrop-blur-sm"></div>
-        </div>
-        
-        <canvas id="crosshairCanvas" aria-hidden="true" class="absolute inset-0 w-full h-full pointer-events-none z-10 rounded-lg" style="display:none;"></canvas>
-      </div>
+      <!-- Canvas panel -->
+      <section aria-label="Image canvas" class="lg:col-span-2 card flex flex-col min-h-0">
+        <div id="canvasWrap" class="relative flex-1 flex items-center justify-center min-h-0"
+          style="background-image:repeating-conic-gradient(var(--surface-hover) 0% 25%, var(--surface) 0% 50%);background-size:16px 16px;">
+          <canvas id="imageCanvas" role="img" aria-label="Image canvas — click or drag to pick a color" tabindex="0"
+            class="max-w-full max-h-full object-contain relative z-10 rounded-[24px] focus-visible:outline-none"
+            style="display:none;"></canvas>
 
-      <div class="px-3 py-1.5 border-t border-neutral-800 flex items-center justify-between flex-shrink-0">
-        <div class="flex items-center gap-2.5">
-          <span class="text-[10px] text-neutral-700 font-mono hidden sm:inline">Click·drag&amp;drop·Ctrl+V</span>
-          <button id="toggleMagBtn" title="Toggle magnifier (M)" aria-label="Toggle magnifier" aria-pressed="true"
-            class="h-5 px-1.5 rounded text-[10px] font-mono text-neutral-500 hover:text-neutral-300 border border-neutral-800 hover:border-neutral-700 transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500">
-            mag
-          </button>
-          <button id="toggleCrosshairBtn" title="Toggle crosshair (X)" aria-label="Toggle crosshair" aria-pressed="false"
-            class="h-5 px-1.5 rounded text-[10px] font-mono text-neutral-500 hover:text-neutral-300 border border-neutral-800 hover:border-neutral-700 transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500">
-            cross
-          </button>
-        </div>
-        <span id="canvasResolution" class="text-[10px] font-mono text-neutral-700"></span>
-      </div>
-    </section>
-
-    <!-- Right panel -->
-    <aside aria-label="Color information" class="flex flex-col gap-2.5 min-h-0 overflow-y-auto">
-
-      <!-- Color card -->
-      <div class="rounded-2xl overflow-hidden border border-neutral-800 flex-shrink-0">
-        <button id="colorHero" title="Copy HEX (H)" aria-label="Copy HEX color value"
-         class="block w-full h-14 transition-colors duration-150 relative group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-inset"
-         style="background:#3b82f6">
-        </button>
-
-        <div class="bg-neutral-900 divide-y divide-neutral-800/50" role="list" aria-label="Color values">
-
-          <!-- Native HTML Color Input Sync Feature -->
-          <div class="flex items-center px-3 py-2 gap-2 group hover:bg-neutral-800/30 transition">
-            <span class="text-[10px] font-semibold text-neutral-600 uppercase tracking-widest w-8 flex-shrink-0 font-mono select-none">PICK</span>
-            <div class="flex items-center gap-2 flex-1 min-w-0">
-              <input type="color" id="nativeColorPicker" value="#3b82f6" class="w-6 h-6 rounded cursor-pointer border-0 bg-transparent p-0">
-              <span class="text-xs text-neutral-400 font-mono">Fine-tune native</span>
+          <div id="canvasPlaceholder" class="absolute inset-0 flex flex-col items-center justify-center gap-3 pointer-events-none z-10">
+            <i data-lucide="image" class="w-10 h-10" style="color:var(--muted)"></i>
+            <div class="text-center">
+              <p class="text-xs font-medium" style="color:var(--muted)">No image loaded</p>
+              <p class="text-[10px] mt-0.5 font-mono" style="color:var(--muted);opacity:0.6">Upload · paste · drag &amp; drop</p>
             </div>
           </div>
 
-          <div class="flex items-center px-3 py-1.5 gap-2 group hover:bg-neutral-800/30 transition" role="listitem">
-            <span class="text-[10px] font-semibold text-neutral-600 uppercase tracking-widest w-8 flex-shrink-0 font-mono select-none">HEX</span>
-            <span id="hexValue" class="font-mono text-xs text-neutral-100 flex-1 min-w-0 truncate">#3B82F6</span>
-            <button data-copy="hex" title="Copy HEX (H)" aria-label="Copy HEX value"
-              class="copy-btn opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 h-5 w-5 rounded bg-neutral-700 hover:bg-neutral-600 inline-flex items-center justify-center text-neutral-400 hover:text-white transition flex-shrink-0 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500">
-              <i data-lucide="copy" class="w-3 h-3 pointer-events-none"></i>
-            </button>
+          <div id="magnifier" aria-hidden="true" class="absolute pointer-events-none z-20" style="display:none;">
+            <canvas id="magCanvas" width="88" height="88" class="rounded-[18px] shadow-2xl block"
+              style="box-shadow:0 0 0 2px var(--accent)"></canvas>
+            <div id="magHex" class="text-center font-mono text-[10px] mt-1 px-2 py-0.5 rounded-lg backdrop-blur-sm"
+              style="color:var(--text);background:var(--surface-hover)"></div>
           </div>
+        </div>
 
-          <div class="flex items-center px-3 py-1.5 gap-2 group hover:bg-neutral-800/30 transition" role="listitem">
-            <span class="text-[10px] font-semibold text-neutral-600 uppercase tracking-widest w-8 flex-shrink-0 font-mono select-none">RGB</span>
-            <span id="rgbValue" class="font-mono text-xs text-neutral-100 flex-1 min-w-0 truncate">59, 130, 246</span>
-            <button data-copy="rgb" title="Copy RGB (R)" aria-label="Copy RGB value"
-              class="copy-btn opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 h-5 w-5 rounded bg-neutral-700 hover:bg-neutral-600 inline-flex items-center justify-center text-neutral-400 hover:text-white transition flex-shrink-0 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500">
-              <i data-lucide="copy" class="w-3 h-3 pointer-events-none"></i>
-            </button>
+        <div class="px-4 py-2 flex items-center justify-between flex-shrink-0">
+          <div class="flex items-center gap-3">
+            <span id="hintText" class="text-[10px] font-mono hidden sm:inline" style="color:var(--muted)">Click or drag on image</span>
+            <button id="toggleMagBtn" class="btn btn-ghost h-6 px-2 text-[10px] font-mono" title="Toggle magnifier (M)" aria-label="Toggle magnifier" aria-pressed="true">mag</button>
           </div>
+          <span id="canvasResolution" class="text-[10px] font-mono num" style="color:var(--muted)"></span>
+        </div>
+      </section>
 
-          <div class="flex items-center px-3 py-1.5 gap-2 group hover:bg-neutral-800/30 transition" role="listitem">
-            <span class="text-[10px] font-semibold text-neutral-600 uppercase tracking-widest w-8 flex-shrink-0 font-mono select-none">HSL</span>
-            <span id="hslValue" class="font-mono text-xs text-neutral-100 flex-1 min-w-0 truncate">221° 83% 60%</span>
-            <button data-copy="hsl" title="Copy HSL (S)" aria-label="Copy HSL value"
-              class="copy-btn opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 h-5 w-5 rounded bg-neutral-700 hover:bg-neutral-600 inline-flex items-center justify-center text-neutral-400 hover:text-white transition flex-shrink-0 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500">
-              <i data-lucide="copy" class="w-3 h-3 pointer-events-none"></i>
-            </button>
-          </div>
+      <!-- Right panel -->
+      <aside aria-label="Color information" class="flex flex-col gap-3 min-h-0 overflow-y-auto">
 
-          <div class="flex items-center px-3 py-1.5 gap-2 group hover:bg-neutral-800/30 transition" role="listitem">
-            <span class="text-[10px] font-semibold text-neutral-600 uppercase tracking-widest w-8 flex-shrink-0 font-mono select-none">OKL</span>
-            <span id="oklchValue" class="font-mono text-xs text-neutral-300 flex-1 min-w-0 truncate">oklch(0.55 0.21 262°)</span>
-            <button data-copy="oklch" title="Copy OKLCH (O)" aria-label="Copy OKLCH value"
-              class="copy-btn opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 h-5 w-5 rounded bg-neutral-700 hover:bg-neutral-600 inline-flex items-center justify-center text-neutral-400 hover:text-white transition flex-shrink-0 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500">
-              <i data-lucide="copy" class="w-3 h-3 pointer-events-none"></i>
-            </button>
-          </div>
+        <!-- Color card -->
+        <div class="card flex-shrink-0">
+          <button id="colorHero" title="Copy HEX (H)" aria-label="Copy HEX color value"
+            class="block w-full h-16 transition-colors duration-150 relative group focus-visible:outline-none"
+            style="background:var(--accent)"></button>
 
-          <div class="flex items-center px-3 py-1.5 gap-2 group hover:bg-neutral-800/30 transition" role="listitem">
-            <span class="text-[10px] font-semibold text-neutral-600 uppercase tracking-widest w-8 flex-shrink-0 font-mono select-none">CSS</span>
-            <span id="cssVarValue" class="font-mono text-[10px] text-neutral-500 flex-1 min-w-0 truncate">--color: #3B82F6;</span>
-            <button data-copy="css" title="Copy CSS variable (C)" aria-label="Copy CSS variable"
-              class="copy-btn opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100 h-5 w-5 rounded bg-neutral-700 hover:bg-neutral-600 inline-flex items-center justify-center text-neutral-400 hover:text-white transition flex-shrink-0 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500">
-              <i data-lucide="copy" class="w-3 h-3 pointer-events-none"></i>
-            </button>
-          </div>
+          <div class="p-1.5" role="list" aria-label="Color values">
 
-          <div class="flex items-center px-3 py-1.5 gap-2" role="listitem">
-            <span class="text-[10px] font-semibold text-neutral-600 uppercase tracking-widest w-8 flex-shrink-0 font-mono select-none">A11Y</span>
-            <div class="flex items-center gap-1.5 flex-1 min-w-0">
-              <span id="contrastWhite" class="text-[10px] font-mono px-1.5 py-0.5 rounded border border-neutral-700 text-neutral-400"></span>
-              <span id="contrastBlack" class="text-[10px] font-mono px-1.5 py-0.5 rounded border border-neutral-700 text-neutral-400"></span>
+            <!-- Native picker -->
+            <div class="flex items-center px-3 py-1.5 gap-3 row-fixed rounded-[18px]" role="listitem">
+              <span class="text-[10px] font-semibold uppercase tracking-widest w-9 flex-shrink-0 font-mono select-none" style="color:var(--muted)">Pick</span>
+              <div class="flex items-center gap-2.5 flex-1 min-w-0">
+                <input type="color" id="nativeColorPicker" value="#1e5fff">
+                <span class="text-xs font-mono" style="color:var(--muted)">Fine-tune</span>
+              </div>
+            </div>
+
+            <!-- HEX (editable) -->
+            <div class="flex items-center px-3 py-1.5 gap-3 row-fixed rounded-[18px] group" role="listitem">
+              <span class="text-[10px] font-semibold uppercase tracking-widest w-9 flex-shrink-0 font-mono select-none" style="color:var(--muted)">HEX</span>
+              <span id="hexValue" class="font-mono text-xs flex-1 min-w-0 truncate num" style="cursor:text" tabindex="0" title="Click to edit">#1E5FFF</span>
+              <button data-copy="hex" class="copy-btn" aria-label="Copy HEX">
+                <i data-lucide="copy" class="w-3 h-3 pointer-events-none"></i>
+              </button>
+            </div>
+
+            <!-- RGB -->
+            <div class="flex items-center px-3 py-1.5 gap-3 row-fixed rounded-[18px] group" role="listitem">
+              <span class="text-[10px] font-semibold uppercase tracking-widest w-9 flex-shrink-0 font-mono select-none" style="color:var(--muted)">RGB</span>
+              <span id="rgbValue" class="font-mono text-xs flex-1 min-w-0 truncate num">30, 95, 255</span>
+              <button data-copy="rgb" class="copy-btn" aria-label="Copy RGB">
+                <i data-lucide="copy" class="w-3 h-3 pointer-events-none"></i>
+              </button>
+            </div>
+
+            <!-- HSL -->
+            <div class="flex items-center px-3 py-1.5 gap-3 row-fixed rounded-[18px] group" role="listitem">
+              <span class="text-[10px] font-semibold uppercase tracking-widest w-9 flex-shrink-0 font-mono select-none" style="color:var(--muted)">HSL</span>
+              <span id="hslValue" class="font-mono text-xs flex-1 min-w-0 truncate num">222° 100% 56%</span>
+              <button data-copy="hsl" class="copy-btn" aria-label="Copy HSL">
+                <i data-lucide="copy" class="w-3 h-3 pointer-events-none"></i>
+              </button>
+            </div>
+
+            <!-- OKLCH -->
+            <div class="flex items-center px-3 py-1.5 gap-3 row-fixed rounded-[18px] group" role="listitem">
+              <span class="text-[10px] font-semibold uppercase tracking-widest w-9 flex-shrink-0 font-mono select-none" style="color:var(--muted)">OKL</span>
+              <span id="oklchValue" class="font-mono text-xs flex-1 min-w-0 truncate num">oklch(0.55 0.24 263°)</span>
+              <button data-copy="oklch" class="copy-btn" aria-label="Copy OKLCH">
+                <i data-lucide="copy" class="w-3 h-3 pointer-events-none"></i>
+              </button>
+            </div>
+
+            <!-- CSS var -->
+            <div class="flex items-center px-3 py-1.5 gap-3 row-fixed rounded-[18px] group" role="listitem">
+              <span class="text-[10px] font-semibold uppercase tracking-widest w-9 flex-shrink-0 font-mono select-none" style="color:var(--muted)">CSS</span>
+              <span id="cssVarValue" class="font-mono text-[10px] flex-1 min-w-0 truncate" style="color:var(--muted)">--color: #1E5FFF;</span>
+              <button data-copy="css" class="copy-btn" aria-label="Copy CSS variable">
+                <i data-lucide="copy" class="w-3 h-3 pointer-events-none"></i>
+              </button>
+            </div>
+
+            <!-- Shades -->
+            <div class="px-3 pt-2 pb-1.5" aria-label="Color shades">
+              <p class="text-[10px] font-mono mb-1.5 select-none" style="color:var(--muted)">shades</p>
+              <div id="shadesStrip" class="flex rounded-[24px] overflow-hidden gap-px" style="height:20px"></div>
+            </div>
+
+            <!-- Harmonics -->
+            <div class="px-3 pt-1.5 pb-2" aria-label="Color harmonics">
+              <p class="text-[10px] font-mono mb-1.5 select-none" style="color:var(--muted)">harmonics</p>
+              <div id="harmonicsRow" class="flex gap-2" style="min-height:28px"></div>
             </div>
           </div>
-
-          <div class="px-3 pt-2 pb-2.5" aria-label="Color shades">
-            <p class="text-[10px] text-neutral-700 font-mono mb-1.5 select-none">shades</p>
-            <div id="shadesStrip" role="list" aria-label="Lightness shades" class="flex rounded overflow-hidden h-4 gap-px"></div>
-          </div>
-
-          <div class="px-3 pt-2 pb-2.5" aria-label="Color harmonics">
-            <p class="text-[10px] text-neutral-700 font-mono mb-1.5 select-none">harmonics</p>
-            <div id="harmonicsRow" role="list" aria-label="Color harmonics" class="flex gap-1.5"></div>
-          </div>
         </div>
-      </div>
 
-      <div class="bg-neutral-900 border border-neutral-800 rounded-2xl p-3 flex-shrink-0">
-        <div class="flex items-center justify-between">
-          <span class="text-[10px] font-semibold text-neutral-600 uppercase tracking-widest font-mono select-none">Palette</span>
-          <button id="extractPaletteBtn" title="Extract palette from image (P)" aria-label="Extract color palette from image"
-            class="h-6 px-2.5 bg-neutral-800 hover:bg-neutral-700 text-neutral-300 hover:text-white text-xs rounded-md inline-flex items-center gap-1 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
-            <i data-lucide="wand-2" class="w-3 h-3 pointer-events-none"></i>
-            Extract
+        <!-- Palette panel -->
+        <div class="card p-4 flex-shrink-0">
+          <div class="flex items-center justify-between">
+            <span class="text-[10px] font-semibold uppercase tracking-widest font-mono select-none" style="color:var(--muted)">Palette</span>
+            <button id="extractPaletteBtn" title="Extract palette from image (P)" aria-label="Extract color palette from image"
+              class="btn btn-soft h-7 px-3 text-[11px]">
+              <i data-lucide="wand-2" class="w-3.5 h-3.5 pointer-events-none"></i> Extract
+            </button>
+          </div>
+          <div id="miniPaletteRow" class="flex gap-1.5 mt-3 flex-wrap" style="min-height:24px"></div>
+          <button id="openPaletteModalBtn" class="link mt-3 text-[10px] font-mono hidden" aria-label="Open full palette view">
+            View full palette →
           </button>
         </div>
-        <div id="miniPaletteRow" class="flex gap-1 mt-2 flex-wrap"></div>
-        <button id="openPaletteModalBtn" class="mt-2 text-[10px] font-mono text-neutral-700 hover:text-neutral-400 transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-500 rounded hidden" aria-label="Open full palette view">
-          View full palette →
-        </button>
-      </div>
 
-      <div class="bg-neutral-900 border border-neutral-800 rounded-2xl p-3 flex-shrink-0">
-        <div class="flex items-center justify-between mb-2">
-          <span class="text-[10px] font-semibold text-neutral-600 uppercase tracking-widest font-mono select-none">Recent</span>
-          <button id="clearRecentBtn" title="Clear recent picks (Delete)" aria-label="Clear recent color picks"
-            class="text-[10px] font-mono text-neutral-700 hover:text-neutral-400 transition focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-neutral-600 rounded px-1">Clear</button>
+        <!-- Recent panel -->
+        <div class="card p-4 flex-shrink-0">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-[10px] font-semibold uppercase tracking-widest font-mono select-none" style="color:var(--muted)">Recent</span>
+            <button id="clearRecentBtn" title="Clear recent picks (Delete)" aria-label="Clear recent color picks"
+              class="btn btn-ghost h-6 px-2 text-[10px] font-mono">Clear</button>
+          </div>
+          <div id="recentColors" class="flex flex-wrap gap-2" style="min-height:24px">
+            <p class="text-[10px] font-mono" style="color:var(--muted)">No picks yet</p>
+          </div>
         </div>
-        <div id="recentColors" role="list" aria-label="Recently picked colors" class="flex flex-wrap gap-1.5">
-          <p class="text-[10px] font-mono text-neutral-700">No picks yet</p>
-        </div>
-      </div>
-
-    </aside>
-  </main>
-</div>
-
-<!-- TOAST NOTIFICATION -->
-<div id="toast" class="hidden fixed bottom-6 right-6 flex items-center gap-3 px-4 py-3 bg-zinc-900/90 border border-zinc-800 text-white rounded-xl shadow-2xl backdrop-blur-md transform transition-all duration-300 translate-y-full opacity-0 z-[100]">
-  <i id="toastIcon" class="w-4 h-4 pointer-events-none" data-lucide="check-circle"></i>
-  <span id="toast-msg" class="text-sm font-medium"></span>
-</div>
-
-<script src="index.js"></script>
+      </aside>
+    </main>
+  </div>
+  
+  <script src="index.js"></script>
 </body>
 </html>
